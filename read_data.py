@@ -32,7 +32,7 @@ df_weather = pd.DataFrame(data=None,columns=['id','tavg','tmin','tmax','prcp','s
 df_weather = df_weather.astype('float64')
 # pull in historical weather data
 for i, row in df.iterrows():
-    if i % 10 == 0:
+    if i % 100 == 0:
         print('at row {}'.format(i))
     has_data = False
     n_stations = 1
