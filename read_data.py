@@ -10,12 +10,13 @@ conn = sqlite3.connect("C:\\Users\\scott\\Downloads\\FPA_FOD_20221014.sqlite")
 c = conn.cursor()
 
 # read data from SQL
-query = 'SELECT * FROM Fires LIMIT 10000'
+query = 'SELECT * FROM Fires ORDER BY RANDOM() LIMIT 10000'
 df = pd.read_sql_query(query,conn)
-df = df[['OBJECTID','FIRE_NAME','DISCOVERY_DATE','NWCG_CAUSE_CLASSIFICATION','CONT_DATE','FIRE_SIZE',
+df = df[['OBJECTID','FIRE_NAME','DISCOVERY_DATE','FIRE_SIZE_CLASS','NWCG_CAUSE_CLASSIFICATION','CONT_DATE','FIRE_SIZE',
          'LATITUDE','LONGITUDE','STATE']]
 df = df.rename(columns={'OBJECTID':'id','FIRE_NAME':'name','DISCOVERY_DATE':'start_date','NWCG_CAUSE_CLASSIFICATION':'cause',
-                        'CONT_DATE':'end_date','FIRE_SIZE':'size','LATITUDE':'lat','LONGITUDE':'lon','STATE':'state'})
+                        'CONT_DATE':'end_date','FIRE_SIZE':'size','LATITUDE':'lat','LONGITUDE':'lon','STATE':'state',
+                        'FIRE_CLASS_SIZE':'fire_size_class'})
 
 # format datetime columns
 df['start_date'] = pd.to_datetime(df['start_date'])
@@ -31,7 +32,7 @@ df_weather = pd.DataFrame(data=None,columns=['id','tavg','tmin','tmax','prcp','s
 df_weather = df_weather.astype('float64')
 # pull in historical weather data
 for i, row in df.iterrows():
-    if i % 100 == 0:
+    if i % 10 == 0:
         print('at row {}'.format(i))
     has_data = False
     n_stations = 1
