@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.compose import make_column_selector as selector
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.linear_model import LinearRegression
@@ -9,39 +8,40 @@ from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import cross_validate
+from sklearn.metrics import PredictionErrorDisplay
+import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_predict
 
+# 0.0031265358167257284
+# The mean cross-validation accuracy is: 0.001 ± 0.011
 
-data = pd.read_csv("./data/sample_data.csv")
+data = pd.read_csv("/Users/emmaeescandon/CS229/project/sample_data_large.csv")
 
-data.drop(['id', 'name', 'start_date', 'end_date', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'end_year', 'end_month', 'end_day_of_year'  ],  axis=1, inplace=True)
+data.drop(['id', 'name', 'start_date', 'end_date', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'end_year', 'end_month', 'end_day_of_year', 'FIRE_SIZE_CLASS' ],  axis=1, inplace=True)
 data.drop(data.columns[0], axis=1, inplace = True)
 
 target_name = "size"
 target = data[target_name]
 
-Y = data.loc[:, ~data.columns.isin(['cause', 'state', 'FIRE_SIZE_CLASS'])]
-#print(Y)
+Y = data.loc[:, ~data.columns.isin(['cause', 'state'])]
+print(Y)
 imp_mean = SimpleImputer(missing_values=np.nan, strategy='mean')
 imputed_DF = pd.DataFrame(imp_mean.fit_transform(Y))
 imputed_DF.columns = Y.columns
 imputed_DF.index = Y.index
     
 Y = imputed_DF
-#print(Y)
+print(Y)
 
 extracted_col = data["cause"] 
 Y = Y.join(extracted_col) 
 extracted_col2 = data["state"] 
 Y = Y.join(extracted_col2) 
-extracted_col3 = data["FIRE_SIZE_CLASS"] 
-Y = Y.join(extracted_col3) 
 
 data = Y
-#print(data)
+print(data)
 
 data.drop(columns=[target_name],inplace=True)
-data.drop(columns=['FIRE_SIZE_CLASS'],inplace=True)
-
 
 
 #one-hot encoder for causes and state
@@ -69,20 +69,42 @@ data_train, data_test, target_train, target_test = train_test_split(
 )
 _ = model.fit(data_train, target_train)
 
-data_test.columns
+data_test.head()
 model.predict(data_test)[:5]
 
-print(target_test[:5])
+target_test[:5]
 print(model.score(data_test, target_test))
 
 cv_results = cross_validate(model, data, target, cv=10)
-cv_results
+
+y_pred = cross_val_predict(model, data, target, cv=10)
+
 scores = cv_results["test_score"]
 print(
     "The mean cross-validation accuracy is: "
     f"{scores.mean():.3f} ± {scores.std():.3f}"
 )
 
-test_pred = model.predict(data_test)
-plt.plot(target_test,test_pred,'o')
+y = target
+fig, axs = plt.subplots(ncols=2, figsize=(8, 4))
+PredictionErrorDisplay.from_predictions(
+    y,
+    y_pred=y_pred,
+    kind="actual_vs_predicted",
+    subsample=100,
+    ax=axs[0],
+    random_state=0,
+)
+axs[0].set_title("Actual vs. Predicted values")
+PredictionErrorDisplay.from_predictions(
+    y,
+    y_pred=y_pred,
+    kind="residual_vs_predicted",
+    subsample=100,
+    ax=axs[1],
+    random_state=0,
+)
+axs[1].set_title("Residuals vs. Predicted Values")
+fig.suptitle("Plotting cross-validated predictions")
+plt.tight_layout()
 plt.show()
