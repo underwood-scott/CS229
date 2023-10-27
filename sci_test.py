@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.compose import make_column_selector as selector
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.linear_model import LinearRegression
@@ -39,6 +40,7 @@ data = Y
 #print(data)
 
 data.drop(columns=[target_name],inplace=True)
+data.drop(columns=['FIRE_SIZE_CLASS'],inplace=True)
 
 
 
@@ -80,3 +82,7 @@ print(
     "The mean cross-validation accuracy is: "
     f"{scores.mean():.3f} ± {scores.std():.3f}"
 )
+
+test_pred = model.predict(data_test)
+plt.plot(target_test,test_pred,'o')
+plt.show()
