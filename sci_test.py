@@ -10,7 +10,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.model_selection import cross_validate
 
 
-data = pd.read_csv("/Users/emmaeescandon/CS229/project/random_data.csv")
+data = pd.read_csv("./data/sample_data.csv")
 
 data.drop(['id', 'name', 'start_date', 'end_date', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'end_year', 'end_month', 'end_day_of_year'  ],  axis=1, inplace=True)
 data.drop(data.columns[0], axis=1, inplace = True)
@@ -19,14 +19,14 @@ target_name = "size"
 target = data[target_name]
 
 Y = data.loc[:, ~data.columns.isin(['cause', 'state', 'FIRE_SIZE_CLASS'])]
-print(Y)
+#print(Y)
 imp_mean = SimpleImputer(missing_values=np.nan, strategy='mean')
 imputed_DF = pd.DataFrame(imp_mean.fit_transform(Y))
 imputed_DF.columns = Y.columns
 imputed_DF.index = Y.index
     
 Y = imputed_DF
-print(Y)
+#print(Y)
 
 extracted_col = data["cause"] 
 Y = Y.join(extracted_col) 
@@ -36,9 +36,9 @@ extracted_col3 = data["FIRE_SIZE_CLASS"]
 Y = Y.join(extracted_col3) 
 
 data = Y
-print(data)
+#print(data)
 
-data.drop(columns=[target_name])
+data.drop(columns=[target_name],inplace=True)
 
 
 
@@ -67,10 +67,10 @@ data_train, data_test, target_train, target_test = train_test_split(
 )
 _ = model.fit(data_train, target_train)
 
-data_test.head()
+data_test.columns
 model.predict(data_test)[:5]
 
-target_test[:5]
+print(target_test[:5])
 print(model.score(data_test, target_test))
 
 cv_results = cross_validate(model, data, target, cv=10)
