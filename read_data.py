@@ -10,7 +10,7 @@ conn = sqlite3.connect("C:\\Users\\scott\\Downloads\\FPA_FOD_20221014.sqlite")
 c = conn.cursor()
 
 # read data from SQL
-query = 'SELECT * FROM Fires ORDER BY RANDOM() LIMIT 100000'
+query = 'SELECT * FROM Fires ORDER BY RANDOM() LIMIT 100'
 df = pd.read_sql_query(query,conn)
 df = df[['OBJECTID','FIRE_NAME','DISCOVERY_DATE','FIRE_SIZE_CLASS','NWCG_CAUSE_CLASSIFICATION','CONT_DATE','FIRE_SIZE',
          'LATITUDE','LONGITUDE','STATE']]
