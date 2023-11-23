@@ -1,5 +1,4 @@
 # test files
 *test*
-examine_data.py
 *.grib*
 *pycache*
