@@ -6,4 +6,4 @@ To run models:
 and save as csv
 - Use `*.ipynb` files to run models using saved dataset
 
-Contact [sunder24@stanford.edu](mailto:sunder24@stanford.edu) with questions.
+Contact [jarmenta@stanford.edu](mailto:jarmenta24@stanford.edu), [emmaee@stanford.edu](mailto:emmaee@stanford.edu), or [sunder24@stanford.edu](mailto:sunder24@stanford.edu) with questions.
