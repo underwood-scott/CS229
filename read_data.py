@@ -1,65 +1,89 @@
-# Import Meteostat library and dependencies
 import datetime
-from meteostat import Point, Daily, Stations
 import numpy as np
 import pandas as pd
 import sqlite3
+from util import add_geospatial_data, add_geospatial_data_alt
+import xarray as xr
 
-conn = sqlite3.connect("C:\\Users\\scott\\Downloads\\FPA_FOD_20221014.sqlite")
+conn = sqlite3.connect("path/to/database")
 
 c = conn.cursor()
 
 # read data from SQL
-query = 'SELECT * FROM Fires ORDER BY RANDOM() LIMIT 100'
+#query = "SELECT * FROM Fires"
+query = "SELECT * FROM Fires ORDER BY RANDOM() LIMIT 50000"
 df = pd.read_sql_query(query,conn)
-df = df[['OBJECTID','FIRE_NAME','DISCOVERY_DATE','FIRE_SIZE_CLASS','NWCG_CAUSE_CLASSIFICATION','CONT_DATE','FIRE_SIZE',
-         'LATITUDE','LONGITUDE','STATE']]
-df = df.rename(columns={'OBJECTID':'id','FIRE_NAME':'name','DISCOVERY_DATE':'start_date','NWCG_CAUSE_CLASSIFICATION':'cause',
-                        'CONT_DATE':'end_date','FIRE_SIZE':'size','LATITUDE':'lat','LONGITUDE':'lon','STATE':'state',
-                        'FIRE_CLASS_SIZE':'fire_size_class'})
+df = df[['DISCOVERY_DATE','FIRE_SIZE_CLASS','NWCG_CAUSE_CLASSIFICATION','NWCG_GENERAL_CAUSE','FIRE_SIZE',
+         'LATITUDE','LONGITUDE']]
+df = df.rename(columns={'DISCOVERY_DATE':'start_date','NWCG_CAUSE_CLASSIFICATION':'category', 'NWCG_GENERAL_CAUSE': 'cause',
+                        'FIRE_SIZE':'size','LATITUDE':'lat','LONGITUDE':'lon','FIRE_CLASS_SIZE':'fire_size_class'})
 
 # format datetime columns
 df['start_date'] = pd.to_datetime(df['start_date'])
-df['end_date'] = pd.to_datetime(df['end_date'])
-df['start_year'] = df['start_date'].dt.year
-df['start_month'] = df['start_date'].dt.month
-df['start_day_of_year'] = df['start_date'].dt.dayofyear
-df['end_year'] = df['end_date'].dt.year
-df['end_month'] = df['end_date'].dt.month
-df['end_day_of_year'] = df['end_date'].dt.dayofyear
 
-df_weather = pd.DataFrame(data=None,columns=['id','tavg','tmin','tmax','prcp','snow','wdir','wspd','wpgt','pres','tsun','prcp_30'])
-df_weather = df_weather.astype('float64')
-# pull in historical weather data
-for i, row in df.iterrows():
-    if i % 100 == 0:
-        print('at row {}'.format(i))
-    has_data = False
-    n_stations = 1
-    # make sure weather station has data
-    while not has_data:
-        start = row['start_date']
-        start_prcp = start-datetime.timedelta(days=30) # last 30 day precipitation measure
-        # get stations with data
-        stations = Stations()
-        stations = stations.nearby(row['lat'],row['lon'])
-        stations = stations.inventory('daily',start)
-        station = stations.fetch(n_stations)
-        end = start
-        data = Daily(station,start,end).fetch()
-        prcp_30 = Daily(station,start_prcp,end).fetch()['prcp'] # get last 30 day prcp
-        # if no data, add next nearest station
-        if data.empty:
-            n_stations+=1
-        # append data
-        else:
-            data['id'] = row['id']
-            data['prcp_30'] = np.sum(prcp_30) # add sum of last 30 day precipitation
-            data['prcp'].replace(np.nan,0,inplace=True) # assume nan prec values are zero
-            df_weather.loc[i] = data.iloc[0]
-        has_data=True
+print('done reading in sql')
 
-# merge weather data to wildfire data
-df = df.merge(df_weather,on='id')
+#######################################################################################################
+############################## READ IN INDEX DATA ###############################################
+#######################################################################################################
+# find path to fire index data
+index_data = 'path/to/fire/index/data'
 
-df.to_csv('./data/sample_data_large.csv')
+# open fire index grib data and add
+first_year = True
+for year in range(1992,2021,1):
+    ds_temp = xr.open_dataset(index_data+"/{}_us_data.grib".format(str(year)),engine='cfgrib')
+    df_temp = ds_temp.to_dataframe()
+    # get list of columns
+    cols = list(df_temp.columns)
+    cols.remove('surface')
+    cols.remove('latitude')
+    cols.remove('longitude')
+
+    # initialize columns
+    if first_year:
+        first_year = False
+        for variable in cols:
+            df[variable] = np.nan
+
+    # add all column data
+    add_geospatial_data(df,df_temp,cols,year)
+    df.to_csv('save/path')
+
+    print('Year {} of fire index data complete'.format(year))
+
+
+df.to_csv('save/path')
+print('finished fire index data')
+
+
+#######################################################################################################
+############################## READ IN TEMPERATURE DATA ###############################################
+#######################################################################################################
+temp_data = 'path/to/temp/data'
+
+# open temp grib data and add
+first_year = True
+for year in range(1992,2021,1):
+    ds_temp = xr.open_dataset(temp_data+"/{}_us_data.grib".format(year),engine='cfgrib')
+    df_temp = ds_temp.to_dataframe()
+    # get list of columns
+    cols = list(df_temp.columns)
+    cols.remove('number')
+    cols.remove('step')
+    cols.remove('surface')
+    cols.remove('valid_time')
+
+    # for first year, initialize columns
+    if first_year:
+        first_year = False
+        # add each columns' data
+        for variable in cols:
+            df[variable] = np.nan
+
+    add_geospatial_data_alt(df,df_temp,cols,year)
+    df.to_csv('save/path')
+
+    print('Year {} of fire temp data complete'.format(year))
+
+df.to_csv('save/path')
